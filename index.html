@@ -210,21 +210,26 @@
     const BANK_DISPLAY_DURATION_PER_CHAR = 650;
     const BANK_NOISE_INTERVAL = 70;
     const BANK_MAX_ATTEMPTS = 3;
-    const GRID_SIZE = 20;
+    const GRID_SIZE = 20; // Tamanho de cada célula do grid
+    const SNAKE_OBSTACLE_COUNT = 5; // Número de obstáculos na dificuldade difícil
 
     let currentGameState = 'BOOTING';
     let activeWindows = new Set();
     let chatCorrectAnswers = 0;
     let chatWrongAnswers = 0;
     let lastDisplayedChatOptions = [];
+    
+    // Variáveis do Jogo da Cobra
     let snake, snakeDirection, snakeCoin, snakeObstacles, snakeScore, snakeGameInterval;
-    let snakeDifficultyLevel = 1;
+    let snakeDifficultyLevel = 1; // Nível de dificuldade atual da cobra
+    let gameSpeed; // Velocidade do jogo da cobra (frames por segundo)
+
     let bankTargetSequence = [];
     let bankAttemptsLeft = BANK_MAX_ATTEMPTS;
     let bankIsDisplayingSequence = false;
     let bankDisplayTimeout = null;
     let bankNoiseIntervalId = null;
-    let cameFromSnakeDifficulty = 1;
+    let cameFromSnakeDifficulty = 1; // Para saber de qual dificuldade o jogador veio ao perder
 
     // --- Text Content & Data ---
     const introTextContent = `You arrive home, the silence is a stark contrast to the usual digital hum of Christian's presence.
@@ -277,9 +282,7 @@ He's... gone.`;
         hideAllMinigameWindows();
 
         if (newState !== 'SUPPORT_CHAT' && newState !== 'BOOTING' && newState !== 'DATING_APP') {
-            if (!activeWindows.has(supportWindow.id) && supportWindow) { // Check if supportWindow exists
-                 // If support was initialized and we are in a state that needs it, make sure it's visible
-                 // This logic might need refinement depending on when support should absolutely be open
+            if (!activeWindows.has(supportWindow.id) && supportWindow) { 
                 if(newState === 'FORUM' || newState === 'PM_PETER' || newState === 'SNAKE' || newState === 'BANK'){
                     showWindow(supportWindow);
                 }
@@ -319,20 +322,20 @@ He's... gone.`;
                     if (currentGameState === 'FORUM') {
                          changeState('PM_PETER');
                     }
-                }, 2500);
+                }, 2500); // Ajustado para um tempo menor para teste, pode ser maior
                 break;
             case 'PM_PETER':
                 if (supportWindow) showWindow(supportWindow);
                 if (browserWindow) showWindow(browserWindow);
                 if (privateMessageWindow) showWindow(privateMessageWindow);
-                if ((pmChatBody && pmChatBody.children.length === 0) || params.restartPM) { // Check pmChatBody
+                if ((pmChatBody && pmChatBody.children.length === 0) || params.restartPM) { 
                     startPeterPM(params.initialMessage);
                 }
                 break;
             case 'SNAKE':
                 if (supportWindow) showWindow(supportWindow);
                 snakeDifficultyLevel = params.difficulty || 1;
-                cameFromSnakeDifficulty = snakeDifficultyLevel;
+                cameFromSnakeDifficulty = snakeDifficultyLevel; // Salva a dificuldade atual
                 if (snakeGameContainer) snakeGameContainer.style.display = 'block';
                 startSnakeGame(snakeDifficultyLevel);
                 break;
@@ -390,7 +393,7 @@ He's... gone.`;
             datingAppChatHistory.appendChild(msgRow);
         });
     }
-    if (contactSupportButtonDatingApp) contactSupportButtonDatingApp.addEventListener('click', () => changeState('SUPPORT_CHAT'));
+    if (contactSupportButtonDatingApp) contactSupportButtonDatingApp.addEventListener('click', () => changeState('SUPPORT_CHAT', {restartChat: true}));
 
 
     // --- Support Chat ---
@@ -519,7 +522,7 @@ He's... gone.`;
         if (isLink) {
             const link = document.createElement('a');
             link.textContent = text;
-            link.onclick = linkAction;
+            link.onclick = linkAction; // linkAction will be changeState('SNAKE', ...)
             msgDiv.appendChild(link);
         } else {
             msgDiv.textContent = text;
@@ -528,16 +531,15 @@ He's... gone.`;
         pmChatBody.scrollTop = pmChatBody.scrollHeight;
     }
 
-    function startPeterPM(initialMessage = null) { // This is called when PM window opens
+    function startPeterPM(initialMessage = null) {
         if (!pmChatBody || !pmSendButton || !pmInput) return;
-        pmChatBody.innerHTML = ''; // Clear previous messages
+        pmChatBody.innerHTML = ''; 
         
-        if (initialMessage) { // For messages like insults when returning from failed snake game
+        if (initialMessage) {
             addMsgToPeterPM(initialMessage, "received");
         }
-        // Peter's standard opening
         addMsgToPeterPM("Word on the wire is you're looking to pull Christian's data from the void. I'm your guy.", "received");
-        setTimeout(() => { // Add slight delay for realism
+        setTimeout(() => {
              addMsgToPeterPM("It ain't cheap. 100,000 untraceable BTC. That's the toll.", "received");
              pmSendButton.disabled = false;
              pmInput.disabled = false;
@@ -554,32 +556,193 @@ He's... gone.`;
             pmSendButton.disabled = true;
             pmInput.disabled = true;
 
-            if (playerMsgText.toLowerCase().includes("no money") || playerMsgText.toLowerCase().includes("don't have")) {
-                setTimeout(() => addMsgToPeterPM("Figured. Always the sob story.", "received"), 1200);
-                setTimeout(() => addMsgToPeterPM("Look, I can point you to a... less conventional source for crypto. Risky. But fast.", "received"), 2700);
-                setTimeout(() => {
-                    addMsgToPeterPM("Your call: [Exploit_Corrupted_Node.sh]", "received", true, () => changeState('SNAKE', {difficulty: 1}));
-                }, 4200);
-            } else {
-                setTimeout(() => addMsgToPeterPM("Cut the chatter. BTC or no deal. My patience is thin.", "received"), 1200);
-                setTimeout(() => addMsgToPeterPM("If you change your tune and get serious about the coin, or find another way...", "received"), 2700);
-                 setTimeout(() => {
-                    addMsgToPeterPM("...you could try this: [Exploit_Corrupted_Node.sh]", "received", true, () => changeState('SNAKE', {difficulty: 1}));
-                }, 4200);
-            }
+            // Resposta padrão de Peter, sempre oferecendo o jogo da cobra
+            setTimeout(() => addMsgToPeterPM("Figured. Always the sob story, or just not serious enough for real business.", "received"), 1200);
+            setTimeout(() => addMsgToPeterPM("Look, I can point you to a... less conventional source for crypto. Risky. But fast, if you've got the skill.", "received"), 2700);
+            setTimeout(() => {
+                addMsgToPeterPM("Your call: [Exploit_Corrupted_Node.sh]", "received", true, () => changeState('SNAKE', {difficulty: 1}));
+                 pmSendButton.disabled = false; // Re-enable for potential future interaction if needed
+                 pmInput.disabled = false;
+            }, 4200);
         });
     }
 
 
     // --- Snake Game ---
-    function initSnakeVariables(difficulty) { /* ... same ... */ }
-    function drawSnakeGame() { /* ... same ... */ }
-    function startSnakeGame(difficulty) { /* ... same ... */ }
-    function handleSnakeKeyPress(e) { /* ... same ... */ }
-    function spawnSnakeCoin() { /* ... same ... */ }
-    function spawnSnakeObstacles(count) { /* ... same ... */ }
-    function isOccupiedBySnake(pos, checkSelf = false) { /* ... same ... */ }
-    function isOccupiedByObstacle(pos) { /* ... same ... */ }
+    function initSnakeVariables(difficulty) {
+        snakeScore = 0;
+        snakeScoreDisplay.textContent = 'Score: ' + snakeScore;
+        snakeStatusDisplay.textContent = difficulty === 1 ? 'Objective: Score ' + SNAKE_TARGET_SCORE_NORMAL : 'Objective: Score ' + SNAKE_TARGET_SCORE_HARD;
+
+        // Posição inicial da cobra no centro
+        const startX = Math.floor(canvas.width / GRID_SIZE / 2);
+        const startY = Math.floor(canvas.height / GRID_SIZE / 2);
+        snake = [ { x: startX, y: startY }, { x: startX - 1, y: startY } ]; // Cobra com 2 segmentos, cabeça na frente
+        snakeDirection = { x: 1, y: 0 }; // Movendo para a direita inicialmente
+
+        snakeObstacles = [];
+        if (difficulty === 2) {
+            spawnSnakeObstacles(SNAKE_OBSTACLE_COUNT);
+        }
+        spawnSnakeCoin(); // Precisa ser chamada depois dos obstáculos para não sobrepor
+    }
+
+    function spawnSnakeCoin() {
+        let newCoinPos;
+        do {
+            newCoinPos = {
+                x: Math.floor(Math.random() * (canvas.width / GRID_SIZE)),
+                y: Math.floor(Math.random() * (canvas.height / GRID_SIZE))
+            };
+        } while (isOccupiedBySnake(newCoinPos) || isOccupiedByObstacle(newCoinPos));
+        snakeCoin = newCoinPos;
+    }
+
+    function spawnSnakeObstacles(count) {
+        snakeObstacles = [];
+        for (let i = 0; i < count; i++) {
+            let newObstaclePos;
+            do {
+                newObstaclePos = {
+                    x: Math.floor(Math.random() * (canvas.width / GRID_SIZE)),
+                    y: Math.floor(Math.random() * (canvas.height / GRID_SIZE))
+                };
+            } while (isOccupiedBySnake(newObstaclePos) || isOccupiedByObstacle(newObstaclePos) || (snakeCoin && newObstaclePos.x === snakeCoin.x && newObstaclePos.y === snakeCoin.y));
+            snakeObstacles.push(newObstaclePos);
+        }
+    }
+
+    function isOccupiedBySnake(pos, checkSelf = false) {
+        const bodyToCheck = checkSelf ? snake.slice(1) : snake;
+        return bodyToCheck.some(segment => segment.x === pos.x && segment.y === pos.y);
+    }
+
+    function isOccupiedByObstacle(pos) {
+        return snakeObstacles.some(obstacle => obstacle.x === pos.x && obstacle.y === pos.y);
+    }
+
+    function handleSnakeKeyPress(e) {
+        const key = e.key.toLowerCase();
+        let newDirectionSet = false;
+        if ((key === "arrowup" || key === "w") && snakeDirection.y === 0) {
+            snakeDirection = { x: 0, y: -1 };
+            newDirectionSet = true;
+        } else if ((key === "arrowdown" || key === "s") && snakeDirection.y === 0) {
+            snakeDirection = { x: 0, y: 1 };
+            newDirectionSet = true;
+        } else if ((key === "arrowleft" || key === "a") && snakeDirection.x === 0) {
+            snakeDirection = { x: -1, y: 0 };
+            newDirectionSet = true;
+        } else if ((key === "arrowright" || key === "d") && snakeDirection.x === 0) {
+            snakeDirection = { x: 1, y: 0 };
+            newDirectionSet = true;
+        }
+        if (newDirectionSet) {
+            e.preventDefault(); // Previne scroll da página com as setas
+        }
+    }
+    
+    function drawSnakeGame() { // Esta é a função principal do loop do jogo
+        const head = { x: snake[0].x + snakeDirection.x, y: snake[0].y + snakeDirection.y };
+
+        // Checar colisão com paredes
+        if (head.x < 0 || head.x >= canvas.width / GRID_SIZE || head.y < 0 || head.y >= canvas.height / GRID_SIZE) {
+            gameOverSnake("Wall collision!");
+            return;
+        }
+
+        // Checar colisão com ela mesma
+        if (isOccupiedBySnake(head, true)) { // true para não checar a cabeça atual com a cabeça antiga na mesma posição se não moveu
+            gameOverSnake("Self collision!");
+            return;
+        }
+        
+        // Checar colisão com obstáculos (apenas na dificuldade 2)
+        if (snakeDifficultyLevel === 2 && isOccupiedByObstacle(head)) {
+            gameOverSnake("Obstacle collision!");
+            return;
+        }
+
+        snake.unshift(head); // Adiciona nova cabeça
+
+        // Checar se comeu a moeda
+        if (head.x === snakeCoin.x && head.y === snakeCoin.y) {
+            snakeScore++;
+            snakeScoreDisplay.textContent = 'Score: ' + snakeScore;
+            spawnSnakeCoin();
+
+            const targetScore = (snakeDifficultyLevel === 1) ? SNAKE_TARGET_SCORE_NORMAL : SNAKE_TARGET_SCORE_HARD;
+            if (snakeScore >= targetScore) {
+                gameWonSnake();
+                return;
+            }
+        } else {
+            snake.pop(); // Remove a cauda se não comeu
+        }
+
+        // Desenhar tudo
+        ctx.clearRect(0, 0, canvas.width, canvas.height); // Limpa o canvas
+
+        // Desenhar cobra
+        ctx.fillStyle = '#0f0'; // Verde para a cobra
+        snake.forEach(segment => {
+            ctx.fillRect(segment.x * GRID_SIZE, segment.y * GRID_SIZE, GRID_SIZE -1 , GRID_SIZE -1); // -1 para pequena borda
+        });
+
+        // Desenhar moeda
+        ctx.fillStyle = '#ff0'; // Amarelo para a moeda
+        ctx.fillRect(snakeCoin.x * GRID_SIZE, snakeCoin.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+
+        // Desenhar obstáculos (se houver)
+        if (snakeDifficultyLevel === 2) {
+            ctx.fillStyle = '#f00'; // Vermelho para obstáculos
+            snakeObstacles.forEach(obstacle => {
+                ctx.fillRect(obstacle.x * GRID_SIZE, obstacle.y * GRID_SIZE, GRID_SIZE, GRID_SIZE);
+            });
+        }
+    }
+
+    function gameOverSnake(reason) {
+        clearInterval(snakeGameInterval);
+        document.removeEventListener('keydown', handleSnakeKeyPress);
+        snakeStatusDisplay.textContent = `GAME OVER: ${reason} Score: ${snakeScore}`;
+        
+        let failureMessage = "Peter: That exploit failed. The node kicked you out. Don't waste my time unless you're serious.";
+        if (cameFromSnakeDifficulty === 2) {
+             failureMessage = "Peter: Maybe you don't want him back enough lol";
+        }
+        setTimeout(() => changeState('PM_PETER', { restartPM: true, initialMessage: failureMessage }), 3000);
+    }
+
+    function gameWonSnake() {
+        clearInterval(snakeGameInterval);
+        document.removeEventListener('keydown', handleSnakeKeyPress);
+
+        if (snakeDifficultyLevel === 1) {
+            snakeStatusDisplay.textContent = `Success! Level 1 Cleared! Score: ${snakeScore}. Advancing to secure layer...`;
+            setTimeout(() => changeState('SNAKE', { difficulty: 2 }), 3000);
+        } else if (snakeDifficultyLevel === 2) {
+            snakeStatusDisplay.textContent = `Full exploit successful! Level 2 Cleared! Score: ${snakeScore}. Quantum Flux signature acquired.`;
+            setTimeout(() => changeState('BANK'), 3000);
+        }
+    }
+
+    function startSnakeGame(difficulty) {
+        snakeDifficultyLevel = difficulty; // Define o nível de dificuldade
+        gameSpeed = (difficulty === 1) ? 7 : 10; // Velocidade: 7fps para normal, 10fps para difícil
+
+        initSnakeVariables(difficulty);
+
+        if (snakeGameInterval) clearInterval(snakeGameInterval); // Limpa intervalo anterior se existir
+
+        // Adiciona event listener para teclas (remove o anterior para evitar duplicatas)
+        document.removeEventListener('keydown', handleSnakeKeyPress);
+        document.addEventListener('keydown', handleSnakeKeyPress);
+        
+        snakeGameInterval = setInterval(drawSnakeGame, 1000 / gameSpeed);
+        canvas.focus(); // Para garantir que o canvas capture eventos de teclado, embora o document listener seja mais robusto
+    }
+
 
     // --- Bank Minigame ---
     function startBankMinigame() { /* ... same ... */ }
@@ -590,11 +753,23 @@ He's... gone.`;
 
     // --- Initialize Game ---
     document.addEventListener('DOMContentLoaded', () => {
-        if (introScreen && desktop && datingAppWindow && supportWindow && browserWindow && privateMessageWindow && snakeGameContainer && bankWindow) {
+        if (introScreen && desktop && datingAppWindow && supportWindow && browserWindow && privateMessageWindow && snakeGameContainer && bankWindow && canvas && ctx) {
             changeState('BOOTING');
         } else {
             console.error("CRITICAL ERROR: One or more essential HTML elements are missing. Game cannot initialize.");
-            document.body.innerHTML = "<p style='color:red; font-size:20px; text-align:center; margin-top:50px;'>CRITICAL ERROR: Game files corrupted. Please reload.</p>";
+            let errorMsg = "CRITICAL ERROR: Game files corrupted or essential elements (like canvas) not found. Please reload. Missing elements: ";
+            if (!introScreen) errorMsg += "introScreen ";
+            if (!desktop) errorMsg += "desktop ";
+            if (!datingAppWindow) errorMsg += "datingAppWindow ";
+            if (!supportWindow) errorMsg += "supportWindow ";
+            if (!browserWindow) errorMsg += "browserWindow ";
+            if (!privateMessageWindow) errorMsg += "privateMessageWindow ";
+            if (!snakeGameContainer) errorMsg += "snakeGameContainer ";
+            if (!bankWindow) errorMsg += "bankWindow ";
+            if (!canvas) errorMsg += "gameCanvas ";
+            if (!ctx) errorMsg += "canvasContext ";
+
+            document.body.innerHTML = `<p style='color:red; font-size:20px; text-align:center; margin-top:50px;'>${errorMsg}</p>`;
         }
     });
   </script>
