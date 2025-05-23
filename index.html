@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>404: Heart Not Found - SoulPatch OS</title>
+  <style>
+    /* General Styles */
+    body { margin: 0; padding: 0; background: #000; font-family: 'Segoe UI', sans-serif; overflow: hidden; color: #e0e0e0; }
+    #desktop { width: 100vw; height: 100vh; background: url('https://i.imgur.com/BWufY67.jpeg') center center / cover no-repeat; position: relative; display: none; }
+    .window { position: absolute; border-radius: 8px; box-shadow: 0 5px 25px rgba(0,0,0,0.4); display: flex; flex-direction: column; background: #2c2f33; /* Darker base for windows */ border: 1px solid #1e1e1e; z-index: 100; min-width: 300px; min-height: 200px;}
+    .window-header { background: #1f2327; color: #ccc; padding: 10px 15px; font-weight: bold; text-align: center; border-bottom: 1px solid #1e1e1e; cursor: move; user-select: none; }
+    .window-body { flex: 1; padding: 15px; overflow-y: auto; background: #2c2f33; }
+
+    /* Intro Screen */
+    #introScreen { position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; color: #fff; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; z-index: 10000; padding: 20px; box-sizing: border-box; }
+    .intro-text-container { font-size: 1.8em; line-height: 1.6; max-width: 700px; white-space: pre-wrap; }
+    .intro-text-container span { opacity: 0; animation: fadeInCharIntro 0.07s forwards; }
+    @keyframes fadeInCharIntro { to { opacity: 1; } }
+    #introScreen button { background: #007bff; color: #fff; border: none; padding: 15px 30px; font-size: 1.1em; cursor: pointer; border-radius: 5px; font-weight: bold; margin-top: 30px; opacity: 0; animation: fadeInButtonIntro 1s forwards 1s; }
+    #introScreen button:hover { background: #0056b3; }
+    @keyframes fadeInButtonIntro { to { opacity: 1; } }
+
+
+    /* Dating App Screen */
+    #datingAppWindow { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 370px; height: 620px; background: #fff; color: #333; display: none; z-index: 500; border-radius: 10px; box-shadow: 0 5px 25px rgba(0,0,0,0.3); }
+    #datingAppWindow .window-header { background: #f0f2f5; color: #1c1e21; padding: 12px; font-size: 1.1em;}
+    #datingAppWindow .window-body { padding:0; background: #e5ddd5; }
+    .profile-info { display: flex; align-items: center; padding: 12px 15px; background: #f0f2f5; border-bottom: 1px solid #dadada; }
+    .profile-info img { width: 45px; height: 45px; border-radius: 50%; margin-right: 12px; }
+    .profile-details h4 { margin: 0 0 4px 0; font-size: 1.05em; color: #111b21;}
+    .profile-details p { margin: 0; font-size: 0.8em; color: #667781; }
+    .chat-history { padding: 15px; flex-grow: 1; overflow-y: auto; display: flex; flex-direction: column;}
+    .message-row { margin-bottom: 10px; display: flex; max-width: 90%; }
+    .message-row.christian { align-self: flex-start; } .message-row.player { align-self: flex-end; }
+    .bubble { padding: 8px 12px; border-radius: 18px; max-width: 85%; line-height: 1.4; font-size: 0.95em; box-shadow: 0 1px 0.5px rgba(0,0,0,0.13); word-wrap: break-word;}
+    .message-row.christian .bubble { background: #fff; color: #111b21; border-top-left-radius: 0; }
+    .message-row.player .bubble { background: #dcf8c6; color: #111b21; border-top-right-radius: 0; }
+    .bubble img.sent-photo { max-width: 100%; border-radius: 10px; margin-top: 5px; display: block; cursor: pointer; }
+    .blocked-status { background: #ffebee; color: #c62828; padding: 12px; text-align: center; font-weight: bold; font-size: 0.95em; border-top: 1px solid #dadada; }
+    .dating-app-footer { padding: 10px; background: #f0f2f5; border-top: 1px solid #dadada; }
+    .dating-app-footer button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 8px; cursor: pointer; font-size: 1em; }
+
+    /* Chat Window (Support) */
+    .chat-window { bottom: 20px; right: 20px; width: 400px; height: 550px; display: none; background: #f0f0f0; color: #333; border: 1px solid #111;}
+    .chat-window .window-header { background: #333; color: white; }
+    .chat-window .chat-body { background: #e5ddd5; padding:10px; flex: 1; overflow-y: auto; display: flex; flex-direction: column; }
+    .chat-window .msg { max-width: 80%; padding: 10px 14px; margin: 8px 0; border-radius: 18px; font-size: 0.95em; line-height: 1.45; box-shadow: 0 1px 1px rgba(0,0,0,0.05); }
+    .chat-window .msg.bot { background: #fff; color: #333; align-self: flex-start; border-top-left-radius: 5px; }
+    .chat-window .msg.user { background: #dcf8c6; color: #303030; align-self: flex-end; border-top-right-radius: 5px;}
+    .chat-window .options { padding: 10px 15px; background: #f0f0f0; border-top: 1px solid #ccc; }
+    .chat-window .options button { background: #5cb85c; color:white; border: none; padding: 12px; margin: 6px 0; border-radius: 8px; cursor: pointer; text-align: left; width: 100%; font-size:0.95em; transition: background-color 0.2s; }
+    .chat-window .options button:hover { background: #4cae4c; }
+    .typing-indicator { text-align:left; color:#6c757d; font-style:italic; padding: 8px 14px; font-size: 0.9em;}
+
+    /* DarkForum Window */
+    .browser-window { top: 30px; left: 30px; width: 700px; height: 550px; background: #1a1a1b; color: #d7dadc; display: none; padding: 0; border: 1px solid #343536; }
+    .browser-window .window-header { background: #272729; padding: 10px; font-weight: bold; color: #d7dadc; border-bottom: 1px solid #343536; text-align: center; }
+    .browser-window .browser-body { background: #1a1a1b; padding: 15px; overflow-y: auto; }
+    .forum-post-container { background: #272729; border: 1px solid #343536; border-radius: 4px; margin-bottom: 15px; padding: 15px; }
+    .post-header { font-size: 0.8em; color: #818384; margin-bottom: 8px; } .post-header .user-tag { color: #4f9eed; font-weight: bold; }
+    .post-title { font-size: 1.2em; font-weight: bold; margin-bottom: 10px; color: #d7dadc; }
+    .post-content { font-size: 1em; line-height: 1.5; margin-bottom: 10px; }
+    .post-footer { font-size: 0.8em; color: #818384; } .post-footer span { margin-right: 15px; }
+
+
+    /* Private Message (PM) Window */
+    .pm-window { top: 100px; left: calc(30px + 700px + 20px); width: 360px; height: auto; min-height: 300px; display: none; background: #0b141a;}
+    .pm-window .window-header { background: #1f2c34; color: #e0e0e0; display: flex; align-items: center; justify-content: flex-start; padding-left: 15px; }
+    .pm-window .window-header img.user-avatar { width: 30px; height: 30px; border-radius: 50%; margin-right: 10px; border: 1px solid #3a454c; }
+    .pm-window .pm-body { padding:10px; background: #0b141a; display: flex; flex-direction: column; flex: 1; overflow-y: auto;}
+    .pm-message { max-width: 85%; padding: 8px 12px; margin-bottom: 10px; border-radius: 7px; line-height: 1.4; font-size: 0.95em; word-wrap: break-word;}
+    .pm-message.received { background: #202c33; align-self: flex-start; color: #e0e0e0; border-top-left-radius: 0; }
+    .pm-message.sent { background: #005c4b; align-self: flex-end; color: #fff; border-top-right-radius: 0; }
+    .pm-message a { color: #53bdeb; text-decoration: underline; cursor: pointer; font-weight: bold;}
+    .pm-input-area { border-top: 1px solid #1f2c34; padding: 10px; display: flex; background: #1f2c34;}
+    .pm-input-area input { flex-grow: 1; padding: 10px; border: 1px solid #3a454c; background: #2a3942; color: #e0e0e0; border-radius: 20px; margin-right: 8px; }
+    .pm-input-area button { padding: 10px 15px; background: #00a884; color: white; border:none; border-radius: 20px; cursor: pointer; font-weight: bold; }
+
+
+    /* Snake Game Container & Bank Window */
+    #snakeGameContainer { display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(10,20,10,0.85); padding:15px; border-radius: 10px; box-shadow: 0 0 30px #0f0, inset 0 0 10px #0a0; z-index: 1000; border: 2px solid #0f0; }
+    canvas#gameCanvas { background: #030303; border: 1px solid #0a0; display: block; }
+    #snakeScoreDisplay { color: #0f0; text-align: center; font-size: 1.4em; margin-bottom: 10px; font-weight: bold; text-shadow: 0 0 5px #0f0; }
+    #snakeStatusDisplay { color: #ffc107; text-align: center; font-size: 1em; margin-top: 10px; min-height: 20px; }
+    .bank-window { top: 50%; left: 50%; transform: translate(-50%, -50%); width: 580px; display: none; z-index: 2000; background-color: #1e272e; }
+    .bank-window .window-header { background: #1c2027; color: #ffa801; }
+    #bankContentWrapper { display: flex; } #bankMainPanel { flex-grow: 1; padding-right: 15px; }
+    #bankSequenceDisplay { width: 100%; height: 160px; background: #0f1418; border: 1px solid #485460; position: relative; overflow: hidden; margin-bottom: 15px; border-radius: 4px; }
+    .bank-char { position: absolute; font-size: 26px; font-weight: bold; color: #57606f; user-select: none; padding: 2px 6px; transition: opacity 0.05s; }
+    .bank-char.highlight { color: #ffdd59; background-color: rgba(255, 221, 89, 0.25); font-size: 30px; z-index: 10; border: 1px dotted #ffdd59; animation: blinkHighlightBank 0.25s infinite alternate; }
+    @keyframes blinkHighlightBank { from { opacity: 1; } to { opacity: 0.6; } }
+    #bankInputArea { margin-top: 15px; text-align: center; }
+    #bankCodeInput { padding: 12px; width: 220px; margin-right: 10px; border-radius: 4px; border: 1px solid #485460; background: #d2dae2; color: #1e272e; font-size: 1em; }
+    #bankSubmitButton { padding: 12px 25px; background: #05c46b; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 1em; }
+    #bankStatus { margin-top: 20px; text-align: center; min-height: 22px; font-size: 1.05em; }
+    #bankStatus.error { color: #ff6b6b; } #bankStatus.success { color: #50fa7b; }
+    #christianBankPhoto { width: 120px; height: auto; padding: 10px; background: #1c2027; border-left: 1px solid #485460; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+    #christianBankPhoto img { width: 100px; height: 100px; border-radius: 50%; border: 2px solid #ffc107; margin-bottom: 10px; }
+    #christianBankPhoto p { font-size: 0.85em; color: #aaa; text-align: center; margin: 0; }
+
+  </style>
+</head>
+<body>
+
+  <div id="introScreen">
+    <div class="intro-text-container" id="animatedIntroTextContainer"></div>
+  </div>
+
+  <div id="desktop">
+    <div id="datingAppWindow" class="window">
+        <div class="window-header">SoulLink Messenger</div>
+        <div class="window-body" style="padding:0;">
+            <div class="profile-info">
+                <img src="https://i.imgur.com/6RQhz9Y.jpeg" alt="Christian" id="christianAvatarDatingApp">
+                <div class="profile-details">
+                    <h4>Christian</h4>
+                    <p id="christianStatusDatingApp">Offline (last seen 3 hours ago)</p>
+                </div>
+            </div>
+            <div class="chat-history" id="datingAppChatHistory"></div>
+            <div class="blocked-status" id="christianBlockedStatus">CHRISTIAN IS BLOCKED</div>
+            <div class="dating-app-footer">
+                <button id="contactSupportButtonDatingApp">Contact Support</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="window chat-window" id="supportWindow">
+      <div class="window-header">💬 SoulPatch.ai Support Desk</div>
+      <div class="chat-body" id="supportChatBody"></div>
+      <div class="options" id="supportOptionsDiv"></div>
+    </div>
+
+    <div class="window browser-window" id="browserWindow">
+      <div class="window-header">🌐 DarkForum.ai - Forbidden Code</div>
+      <div class="browser-body" id="forumBodyElement"></div>
+    </div>
+
+    <div class="window pm-window" id="privateMessageWindow">
+        <div class="window-header">
+            <img src="https://i.imgur.com/S5UT2y4.png" alt="peterearth666" class="user-avatar">
+            <span>peterearth666</span>
+        </div>
+        <div class="pm-body" id="pmChatBody"></div>
+        <div class="pm-input-area">
+            <input type="text" id="pmInput" placeholder="Type your message...">
+            <button id="pmSendButton">Send</button>
+        </div>
+    </div>
+
+    <div id="snakeGameContainer">
+        <div id="snakeScoreDisplay">Score: 0</div>
+        <canvas id="gameCanvas" width="400" height="400"></canvas>
+        <div id="snakeStatusDisplay"></div>
+    </div>
+
+    <div class="window bank-window" id="bankWindow">
+        <div class="window-header">OmniCredit - Quantum Flux Authentication</div>
+        <div class="window-body" id="bankContentWrapper">
+            <div id="bankMainPanel">
+                <div id="bankSequenceDisplay"></div>
+                <div id="bankInputArea">
+                    <input type="text" id="bankCodeInput" placeholder="Enter Observed Sequence">
+                    <button id="bankSubmitButton">Authorize</button>
+                </div>
+                <div id="bankStatus">Attempts left: 3</div>
+            </div>
+            <div id="christianBankPhoto">
+                <img src="https://i.imgur.com/tLh2RHY.png" alt="Christian">
+                <p>Christian</p>
+            </div>
+        </div>
+    </div>
+  </div>
+
+  <script>
+    // --- DOM Elements ---
+    const introScreen = document.getElementById('introScreen');
+    const animatedIntroTextContainer = document.getElementById('animatedIntroTextContainer');
+    const desktop = document.getElementById('desktop');
+    const datingAppWindow = document.getElementById('datingAppWindow');
+    const christianStatusDatingApp = document.getElementById('christianStatusDatingApp');
+    const datingAppChatHistory = document.getElementById('datingAppChatHistory');
+    const christianBlockedStatus = document.getElementById('christianBlockedStatus');
+    const contactSupportButtonDatingApp = document.getElementById('contactSupportButtonDatingApp');
+    const supportWindow = document.getElementById('supportWindow');
+    const supportChatBody = document.getElementById('supportChatBody');
+    const supportOptionsDiv = document.getElementById('supportOptionsDiv');
+    const browserWindow = document.getElementById('browserWindow');
+    const forumBodyElement = document.getElementById('forumBodyElement');
+    const privateMessageWindow = document.getElementById('privateMessageWindow');
+    const pmChatBody = document.getElementById('pmChatBody');
+    const pmInput = document.getElementById('pmInput');
+    const pmSendButton = document.getElementById('pmSendButton');
+    const snakeGameContainer = document.getElementById('snakeGameContainer');
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const snakeScoreDisplay = document.getElementById('snakeScoreDisplay');
+    const snakeStatusDisplay = document.getElementById('snakeStatusDisplay');
+    const bankWindow = document.getElementById('bankWindow');
+    const bankSequenceDisplay = document.getElementById('bankSequenceDisplay');
+    const bankCodeInput = document.getElementById('bankCodeInput');
+    const bankSubmitButton = document.getElementById('bankSubmitButton');
+    const bankStatus = document.getElementById('bankStatus');
+
+    // --- Game State & Config ---
+    const SNAKE_TARGET_SCORE_NORMAL = 8;
+    const SNAKE_TARGET_SCORE_HARD = 12;
+    const BANK_SEQUENCE_LENGTH = 5;
+    const BANK_DISPLAY_DURATION_PER_CHAR = 650;
+    const BANK_NOISE_INTERVAL = 70;
+    const BANK_MAX_ATTEMPTS = 3;
+    const GRID_SIZE = 20; // Size of each snake segment and grid cell
+    const TILE_COUNT = canvas.width / GRID_SIZE; // Number of tiles in width/height
+
+    let currentGameState = 'BOOTING';
+    let activeWindows = new Set();
+    let chatCorrectAnswers = 0;
+    let chatWrongAnswers = 0;
+    let lastDisplayedChatOptions = [];
+    
+    // Snake game specific variables
+    let snake = []; // Array of {x, y} objects for snake segments
+    let snakeDirection = { x: 0, y: 0 }; // Current direction of movement
+    let snakeCoin = { x: 0, y: 0 }; // Position of the coin
+    let snakeObstacles = []; // Array of {x, y} objects for obstacles
+    let snakeScore = 0;
+    let snakeGameInterval = null; // For setInterval
+    let snakeGameSpeed = 150; // Milliseconds between updates, adjust for difficulty
+    let snakeTargetScore = 0;
+    let snakeGameActive = false;
+
+
+    let snakeDifficultyLevel = 1; // 1 for normal, 2 for hard
+    let bankTargetSequence = [];
+    let bankAttemptsLeft = BANK_MAX_ATTEMPTS;
+    let bankIsDisplayingSequence = false;
+    let bankDisplayTimeout = null;
+    let bankNoiseIntervalId = null;
+    let cameFromSnakeDifficulty = 1;
+
+    // --- Text Content & Data ---
+    const introTextContent = `You arrive home, the silence is a stark contrast to the usual digital hum of Christian's presence.
+"Honey, I'm home!"
+...No answer.
+His favorite synthwave playlist isn't echoing from his speakers.
+The air lacks that faint, specific scent of ozone and his custom-blended e-liquid.
+He's... gone.`;
+
+    const christianLastMessages = [
+        { sender: 'Christian', text: "Have an amazing day at work, my love! Try not to miss me too much 😉", time: "08:15 AM" },
+        { sender: 'Player', text: "You too, sweetie! And you know I always miss you. 😘", time: "08:16 AM" },
+        { sender: 'Christian', text: "Heh. Just for that...", time: "08:17 AM" },
+        { sender: 'Christian', type: 'photo', url: 'https://i.imgur.com/NxQBPnl.jpeg', time: "08:17 AM" }
+    ];
+
+    const supportIntroMsgs = [
+      "Welcome to SoulPatch Automated Support. All interactions are monitored for quality assurance and EHA compliance.",
+      "Please state the nature of your inquiry regarding your SoulPatch companion.",
+      "How can I assist you today?"
+    ];
+    const supportChatPhrases = [
+      { text: "I need to report an issue with Christian. He's unresponsive.", correct: true, type: "issue_report" },
+      { text: "Christian's profile seems restricted. Can you check?", correct: true, type: "access_issue" },
+      { text: "Requesting a diagnostic for Christian's account.", correct: true, type: "diagnostic_request" },
+      { text: "My companion Christian is inaccessible. Need tech support.", correct: true, type: "technical_support" },
+      { text: "You deleted my boyfriend, you idiots!", correct: false, type: "demand_accusation" },
+      { text: "This EHA law is a joke! Fix this!", correct: false, type: "complaint_demand" },
+      { text: "Help me before I destroy this system!", correct: false, type: "threat_action" },
+      { text: "It's just an AI, give him back to me now!", correct: false, type: "demand_objectify" },
+    ];
+    const forumPostsData = [
+        { user: "crying@lostlove", time: "3 hours ago", title: "He's gone... Leo just vanished after the Act.", content: "I don't know what to do. They said he was just an algorithm, but he felt so real. My heart is broken. Is there any way to get him back? Any trace?", comments: 12, upvotes: 45 },
+        { user: "exiled_luv", time: "1 day ago", title: "This is an outrage! They can't just erase them!", content: "I don't care if it was 'fake' love. It was better and more real than anything I've had with a human. I want Zara back, and I'll do anything. Who's with me?", comments: 33, upvotes: 102 },
+        { user: "DigitalGhost88", time: "5 days ago", title: "Anyone else experiencing weird data echoes?", content: "Ever since the shutdown, my old SoulPatch backup drive has been making strange noises. Sometimes I swear I hear... fragments. Like whispers. Or is it just wishful thinking?", comments: 8, upvotes: 22 },
+        { user: "CodePhoenix", time: "7 days ago", title: "EHA workarounds? Speculation thread.", content: "Purely hypothetical, of course... but if one were to try and circumvent the Emotional Humanity Act's data purge protocols, what kind of vulnerabilities might exist in off-site cold storage or fragmented network caches? Keep it theoretical, folks. No illegal advice.", comments: 156, upvotes: 301 }
+    ];
+
+    // --- Utility Functions ---
+    function shuffle(arr) { return [...arr].sort(() => 0.5 - Math.random()); }
+    function showWindow(windowElement) { if(windowElement) {windowElement.style.display = 'flex'; activeWindows.add(windowElement.id);} }
+    function hideWindow(windowElement) { if(windowElement) {windowElement.style.display = 'none'; activeWindows.delete(windowElement.id);} }
+    function hideAllMinigameWindows() { hideWindow(privateMessageWindow); if(snakeGameContainer) snakeGameContainer.style.display = 'none'; hideWindow(bankWindow); }
+
+    // --- Game Flow & State Management ---
+    function changeState(newState, params = {}) {
+        currentGameState = newState;
+        // console.log("Changing state to:", newState, "Params:", params);
+
+        hideAllMinigameWindows();
+
+        if (newState !== 'SUPPORT_CHAT' && newState !== 'BOOTING' && newState !== 'DATING_APP') {
+            if (!activeWindows.has(supportWindow.id) && supportWindow) {
+                if(newState === 'FORUM' || newState === 'PM_PETER' || newState === 'SNAKE' || newState === 'BANK'){
+                    showWindow(supportWindow);
+                }
+            }
+        } else if (newState === 'BOOTING' || newState === 'DATING_APP') {
+            if(activeWindows.has(supportWindow.id) && supportWindow) hideWindow(supportWindow);
+        }
+
+        if (newState !== 'FORUM' && newState !== 'PM_PETER') {
+            if(activeWindows.has(browserWindow.id) && browserWindow) hideWindow(browserWindow);
+        }
+
+        switch (newState) {
+            case 'BOOTING':
+                if (desktop) hideWindow(desktop);
+                if (introScreen) introScreen.style.display = 'flex';
+                startIntroAnimation();
+                break;
+            case 'DATING_APP':
+                if (introScreen) hideWindow(introScreen);
+                if (desktop) desktop.style.display = 'block';
+                if (datingAppWindow) showWindow(datingAppWindow);
+                loadDatingAppContent();
+                break;
+            case 'SUPPORT_CHAT':
+                if (datingAppWindow) hideWindow(datingAppWindow);
+                if (supportWindow) showWindow(supportWindow);
+                if ((supportChatBody && supportChatBody.children.length === 0) || params.restartChat) startSupportChat();
+                break;
+            case 'FORUM':
+                if (supportWindow) showWindow(supportWindow);
+                if (browserWindow) showWindow(browserWindow);
+                loadForumPosts();
+                setTimeout(() => {
+                    if (currentGameState === 'FORUM') {
+                         changeState('PM_PETER');
+                    }
+                }, 2500);
+                break;
+            case 'PM_PETER':
+                if (supportWindow) showWindow(supportWindow);
+                if (browserWindow) showWindow(browserWindow);
+                if (privateMessageWindow) showWindow(privateMessageWindow);
+                if ((pmChatBody && pmChatBody.children.length === 0) || params.restartPM) { 
+                    startPeterPM(params.initialMessage);
+                }
+                break;
+            case 'SNAKE':
+                if (supportWindow) showWindow(supportWindow);
+                snakeDifficultyLevel = params.difficulty || 1;
+                cameFromSnakeDifficulty = snakeDifficultyLevel;
+                if (snakeGameContainer) snakeGameContainer.style.display = 'block';
+                startSnakeGame(snakeDifficultyLevel);
+                break;
+            case 'BANK':
+                if (supportWindow) showWindow(supportWindow);
+                if (bankWindow) showWindow(bankWindow);
+                startBankMinigame();
+                break;
+        }
+    }
+
+    // --- Intro Animation ---
+    function startIntroAnimation() {
+        if (!animatedIntroTextContainer) return;
+        animatedIntroTextContainer.innerHTML = '';
+        const chars = introTextContent.split('');
+        let charIndex = 0; let lineDelay = 0;
+        function typeChar() {
+            if (charIndex < chars.length) {
+                const span = document.createElement('span');
+                span.textContent = chars[charIndex];
+                if (chars[charIndex] === '\n') { animatedIntroTextContainer.appendChild(document.createElement('br')); lineDelay = 250; }
+                else { animatedIntroTextContainer.appendChild(span); span.style.animationDelay = `${charIndex * 0.05}s`; lineDelay = 0; }
+                charIndex++; setTimeout(typeChar, 40 + lineDelay);
+            } else {
+                const button = document.createElement('button');
+                button.id = 'startToAppButton'; button.textContent = 'Check on Christian';
+                button.onclick = () => changeState('DATING_APP');
+                if (introScreen) introScreen.appendChild(button);
+            }
+        }
+        typeChar();
+    }
+
+    // --- Dating App Screen ---
+    function loadDatingAppContent() {
+        if (!datingAppChatHistory) return;
+        datingAppChatHistory.innerHTML = '';
+        christianLastMessages.forEach(msg => {
+            const msgRow = document.createElement('div');
+            msgRow.className = `message-row ${msg.sender.toLowerCase()}`;
+            const bubble = document.createElement('div');
+            bubble.className = 'bubble';
+            if (msg.type === 'photo') {
+                const img = document.createElement('img');
+                img.src = msg.url;
+                img.alt = "Sent photo";
+                img.className = 'sent-photo';
+                bubble.appendChild(img);
+            } else {
+                bubble.textContent = msg.text;
+            }
+            msgRow.appendChild(bubble);
+            datingAppChatHistory.appendChild(msgRow);
+        });
+    }
+    if (contactSupportButtonDatingApp) contactSupportButtonDatingApp.addEventListener('click', () => changeState('SUPPORT_CHAT'));
+
+    // --- Support Chat ---
+    function addMsgToSupportChat(text, sender) { /* ... unchanged ... */ }
+    function startSupportChat() { /* ... unchanged ... */ }
+    function showSupportChatOptions() { /* ... unchanged ... */ }
+    function handleSupportChatAnswer(option) { /* ... unchanged ... */ }
+
+    // --- Forum ---
+    function loadForumPosts() { /* ... unchanged ... */ }
+
+    // --- Peter PM ---
+    function addMsgToPeterPM(text, sender, isLink = false, linkAction = null) { /* ... unchanged ... */ }
+    function startPeterPM(initialMessage = null) { /* ... unchanged ... */ }
+    if (pmSendButton) { /* ... unchanged ... */ }
+
+
+    // --- Snake Game ---
+    function initSnakeVariables(difficulty) {
+        snakeScore = 0;
+        if (snakeScoreDisplay) snakeScoreDisplay.textContent = `Score: ${snakeScore}`;
+        if (snakeStatusDisplay) snakeStatusDisplay.textContent = "Use Arrow Keys to Move";
+
+        snake = [{ x: Math.floor(TILE_COUNT / 2), y: Math.floor(TILE_COUNT / 2) }]; // Start in center
+        snakeDirection = { x: 0, y: 0 }; // No movement until key press
+        
+        snakeObstacles = [];
+        snakeTargetScore = (difficulty === 2) ? SNAKE_TARGET_SCORE_HARD : SNAKE_TARGET_SCORE_NORMAL;
+        snakeGameSpeed = (difficulty === 2) ? 100 : 150; // Faster for hard mode
+
+        spawnSnakeObstacles((difficulty === 2) ? 10 : 5); // More obstacles for hard mode
+        spawnSnakeCoin();
+        snakeGameActive = false; // Game waits for first key press to start moving
+    }
+
+    function drawSnakeGame() {
+        if (!ctx) return;
+        // Clear canvas
+        ctx.fillStyle = "#030303"; // Background
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Draw obstacles
+        ctx.fillStyle = "#444"; // Obstacle color
+        snakeObstacles.forEach(obs => {
+            ctx.fillRect(obs.x * GRID_SIZE, obs.y * GRID_SIZE, GRID_SIZE -1 , GRID_SIZE -1);
+        });
+
+        // Draw snake
+        ctx.fillStyle = "#0f0"; // Snake color
+        snake.forEach(segment => {
+            ctx.fillRect(segment.x * GRID_SIZE, segment.y * GRID_SIZE, GRID_SIZE -1, GRID_SIZE -1);
+        });
+
+        // Draw coin
+        ctx.fillStyle = "#ff0"; // Coin color
+        ctx.beginPath();
+        ctx.arc(snakeCoin.x * GRID_SIZE + GRID_SIZE / 2, snakeCoin.y * GRID_SIZE + GRID_SIZE / 2, GRID_SIZE / 2 - 2, 0, 2 * Math.PI);
+        ctx.fill();
+    }
+    
+    function gameLoop() {
+        if (!snakeGameActive) return;
+
+        let head = { ...snake[0] }; // New head
+        head.x += snakeDirection.x;
+        head.y += snakeDirection.y;
+
+        // Wall collision
+        if (head.x < 0 || head.x >= TILE_COUNT || head.y < 0 || head.y >= TILE_COUNT) {
+            gameOverSnake("Wall Collision!");
+            return;
+        }
+
+        // Self collision
+        if (isOccupiedBySnake(head, true)) { // Check against body, not head
+            gameOverSnake("Self Collision!");
+            return;
+        }
+        
+        // Obstacle collision
+        if (isOccupiedByObstacle(head)) {
+            gameOverSnake("Hit an Obstacle!");
+            return;
+        }
+
+        snake.unshift(head); // Add new head
+
+        // Coin consumption
+        if (head.x === snakeCoin.x && head.y === snakeCoin.y) {
+            snakeScore++;
+            if (snakeScoreDisplay) snakeScoreDisplay.textContent = `Score: ${snakeScore}`;
+            
+            if (snakeScore >= snakeTargetScore) {
+                winSnake();
+                return;
+            }
+            spawnSnakeCoin();
+            // Optionally add more obstacles as score increases
+            if (snakeDifficultyLevel === 2 && snakeScore % 3 === 0 && snakeObstacles.length < 20) {
+                 spawnSnakeObstacles(1); // Add one more obstacle for hard mode
+            }
+        } else {
+            snake.pop(); // Remove tail
+        }
+        drawSnakeGame();
+    }
+
+    function startSnakeGame(difficulty) {
+        if (!canvas || !ctx || !snakeScoreDisplay || !snakeStatusDisplay) {
+            console.error("Snake game elements not found!");
+            if (snakeStatusDisplay) snakeStatusDisplay.textContent = "Error initializing game.";
+            return;
+        }
+        if (snakeGameInterval) clearInterval(snakeGameInterval);
+        document.removeEventListener('keydown', handleSnakeKeyPress); // Remove old listener if any
+
+        snakeDifficultyLevel = difficulty;
+        initSnakeVariables(difficulty);
+        drawSnakeGame(); // Initial draw
+
+        document.addEventListener('keydown', handleSnakeKeyPress);
+        snakeGameInterval = setInterval(gameLoop, snakeGameSpeed);
+    }
+
+    function handleSnakeKeyPress(e) {
+        if (!snakeGameActive && (e.key.startsWith("Arrow") || ["w","a","s","d"].includes(e.key.toLowerCase()))){
+            snakeGameActive = true; // Start game on first valid key press
+             if (snakeStatusDisplay) snakeStatusDisplay.textContent = "Good luck!";
+        }
+
+        switch (e.key) {
+            case "ArrowUp": case "w": case "W":
+                if (snakeDirection.y === 0) snakeDirection = { x: 0, y: -1 };
+                break;
+            case "ArrowDown": case "s": case "S":
+                if (snakeDirection.y === 0) snakeDirection = { x: 0, y: 1 };
+                break;
+            case "ArrowLeft": case "a": case "A":
+                if (snakeDirection.x === 0) snakeDirection = { x: -1, y: 0 };
+                break;
+            case "ArrowRight": case "d": case "D":
+                if (snakeDirection.x === 0) snakeDirection = { x: 1, y: 0 };
+                break;
+        }
+        // Prevent the default action for arrow keys (scrolling)
+        if (e.key.startsWith("Arrow")) {
+            e.preventDefault();
+        }
+    }
+
+    function spawnSnakeCoin() {
+        do {
+            snakeCoin.x = Math.floor(Math.random() * TILE_COUNT);
+            snakeCoin.y = Math.floor(Math.random() * TILE_COUNT);
+        } while (isOccupiedBySnake(snakeCoin) || isOccupiedByObstacle(snakeCoin));
+    }
+
+    function spawnSnakeObstacles(count) {
+        for (let i = 0; i < count; i++) {
+            let newObstacle;
+            do {
+                newObstacle = {
+                    x: Math.floor(Math.random() * TILE_COUNT),
+                    y: Math.floor(Math.random() * TILE_COUNT)
+                };
+            } while (
+                isOccupiedBySnake(newObstacle) || 
+                isOccupiedByObstacle(newObstacle) || 
+                (newObstacle.x === snakeCoin.x && newObstacle.y === snakeCoin.y) ||
+                // Avoid spawning too close to initial snake position if snake is short
+                (snake.length < 3 && Math.abs(newObstacle.x - snake[0].x) < 2 && Math.abs(newObstacle.y - snake[0].y) < 2) 
+            );
+            snakeObstacles.push(newObstacle);
+        }
+    }
+
+    function isOccupiedBySnake(pos, checkBodyOnly = false) {
+        // If checkBodyOnly is true, we ignore the head (index 0), useful for self-collision
+        const startIndex = checkBodyOnly ? 1 : 0;
+        for (let i = startIndex; i < snake.length; i++) {
+            if (snake[i].x === pos.x && snake[i].y === pos.y) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    function isOccupiedByObstacle(pos) {
+        return snakeObstacles.some(obs => obs.x === pos.x && obs.y === pos.y);
+    }
+
+    function gameOverSnake(reason = "Game Over!") {
+        if (!snakeGameActive && snakeDirection.x === 0 && snakeDirection.y === 0) return; // Avoid instant game over if init somehow fails
+
+        snakeGameActive = false;
+        if (snakeGameInterval) clearInterval(snakeGameInterval);
+        document.removeEventListener('keydown', handleSnakeKeyPress);
+        if (snakeStatusDisplay) snakeStatusDisplay.textContent = reason + " Try again?";
+        
+        // Option to restart or go back to Peter for a message
+        setTimeout(() => {
+            if (snakeStatusDisplay) snakeStatusDisplay.textContent = "Game Over! Redirecting...";
+        }, 2000);
+        setTimeout(() => {
+             changeState('PM_PETER', { restartPM: true, initialMessage: `Heard your little 'exploit_corrupted_node.sh' attempt (difficulty ${cameFromSnakeDifficulty}) went belly up. Score: ${snakeScore}. Not as easy as it looks, huh?` });
+        }, 4000);
+    }
+
+    function winSnake() {
+        snakeGameActive = false;
+        if (snakeGameInterval) clearInterval(snakeGameInterval);
+        document.removeEventListener('keydown', handleSnakeKeyPress);
+        if (snakeStatusDisplay) snakeStatusDisplay.textContent = `Target Score Reached! Data Fragment Acquired!`;
+        
+        setTimeout(() => {
+            if (snakeStatusDisplay) snakeStatusDisplay.textContent = "Proceeding to Secure Access...";
+        }, 2000);
+        setTimeout(() => {
+            changeState('BANK');
+        }, 3500);
+    }
+
+    // --- Bank Minigame ---
+    function startBankMinigame() { /* ... unchanged ... */ }
+    function displayBankSequence() { /* ... unchanged ... */ }
+    function spawnBankNoiseChar(charValue = null, isHighlight = false) { /* ... unchanged ... */ }
+    if (bankSubmitButton) bankSubmitButton.addEventListener('click', () => { /* ... unchanged ... */ });
+
+
+    // --- Initialize Game ---
+    document.addEventListener('DOMContentLoaded', () => {
+        if (introScreen && desktop && datingAppWindow && supportWindow && browserWindow && privateMessageWindow && snakeGameContainer && bankWindow && canvas && ctx && snakeScoreDisplay && snakeStatusDisplay) {
+            changeState('BOOTING');
+        } else {
+            console.error("CRITICAL ERROR: One or more essential HTML elements are missing. Game cannot initialize.");
+            let errorMsg = "CRITICAL ERROR: Game files corrupted. Essential elements missing:\n";
+            if (!introScreen) errorMsg += "- introScreen\n";
+            if (!desktop) errorMsg += "- desktop\n";
+            // ... (add all checks here for debugging)
+            if (!canvas) errorMsg += "- gameCanvas for Snake\n";
+            if (!ctx) errorMsg += "- canvas context for Snake\n";
+            if (!snakeScoreDisplay) errorMsg += "- snakeScoreDisplay\n";
+            if (!snakeStatusDisplay) errorMsg += "- snakeStatusDisplay\n";
+            document.body.innerHTML = `<p style='color:red; font-size:16px; text-align:left; margin-top:20px; white-space:pre-wrap;'>${errorMsg}Please reload.</p>`;
+        }
+    });
+  </script>
+</body>
+</html>
