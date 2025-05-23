@@ -465,12 +465,12 @@ Christian is… blocked.`;
           addMsgToSupportChat("Thank you. I am currently accessing Christian's profile data. Please wait a moment while the system processes this.", 'bot');
         } else {
           chatWrongAnswers++;
-          addMsgToSupportChat("Understood. Your query is being logged. I need to consult the EHA compliance matrix for this type of request. One moment, please.", 'bot');
+          addMsgToSupportChat("Understood. Your query is being logged. One moment, please.", 'bot');
         }
 
         setTimeout(() => {
             if (chatCorrectAnswers >= 3) {
-              addMsgToSupportChat("Update: Our systems indicate that Christian's primary data core was affected by the EHA purge. However, there are faint residual signals on decentralized networks. These are typically explored by users on platforms like DarkForum.ai for data recovery attempts.", 'bot');
+              addMsgToSupportChat("Update: We’re sorry for your loss. In compliance with the Enhanced Humanity Act, Christian’s data core has been permanently decommissioned. While we’re legally unable to restore or provide access to that data, please know we value your experience and are here to support you in any way we can.", 'bot');
               setTimeout(() => changeState('FORUM'), 2000);
             } else if (chatWrongAnswers >= 2) {
               addMsgToSupportChat("Warning: Your communication pattern has triggered a compliance alert. Further inquiries of this nature may result in temporary account suspension. This support session is now closed.", 'bot');
